@@ -1,15 +1,45 @@
 Feature: Register user
-	As a user
-	I want to register for the picture gallery
-	So that I can upload my favourite pictures
+	As a User
+	I want to Register 
+	So that I can access My Account
 	
-Scenario: I don't have an account registered but want to create one.
-	Given I can see the "register" page
-	When I type:
-	| Field Name  |  Value    |
-	| id	      | Fred      |
-	| pass        | password  |
-	| pass1       | password  |
-	And click on "create"
-	Then I see the "home" page
-	And I see the menu item "logout Fred"
+Scenario: register with valid details
+	Given I am on Register Page
+	When I enter username as 'username'
+	And I enter password as 'password' and retypePassword as 'password'
+	And I select create account
+	Then account 'username' should be created successfully
+	And the 'home' page is displayed
+	And I should see menu item 'logout username'
+	
+	
+Scenario Outline: register with in valid details
+	Given I am on Register Page
+	When I enter username as '<Username>'
+	And I enter password as '<Password>' and retypePassword as '<RetypePassword>'
+	And I select create account
+	Then account '<Username>' shouldn't be created 
+	And I should see error message '<Error Message>'
+	
+Examples:
+	|Username|Password|RetypePassword|Error Message|
+	|sri     |sri     |sri           |password must be at least 5 characters|
+	|sri     |srikanth|srikanth1     |entered passwords do not match|
+	
+	
+Scenario:Attempt user registration with existing username
+	Given I am on Register Page
+	And user exists with username 'jack'
+    When I enter username as 'jack'
+    And I enter password as 'password' and retypePassword as 'password'
+    And I select create account
+    Then I should see error message 'The user with id jack already exists!'
+    	
+ 
+	
+	
+	
+	
+	
+	
+	

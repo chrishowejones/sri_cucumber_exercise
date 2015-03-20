@@ -32,140 +32,70 @@ public class RegisterSteps {
 
 	private final WebDriver driver = new FirefoxDriver();
 
-	private final HashMap<String, String> pageMap = new HashMap<String, String>();
-
-	private static final String PICTURE_URL = "http://localhost:3000";
-
-	private static final String JDBC_DRIVER = "org.postgresql.Driver";
-
-	private static final String DB_URL = "jdbc:postgresql://localhost/gallery";
-
-	// Database credentials
-	private static final String USER = "admin";
-
-	private static final String PASS = "";
-
-	public class FieldValue {
-
-		private String fieldName;
-
-		private String value;
-
-		public String getValue() {
-			return value;
-		}
-
-		public void setValue(String value) {
-			this.value = value;
-		}
-
-		public String getFieldName() {
-			return fieldName;
-		}
-
-		public void setFieldName(String fieldName) {
-			this.fieldName = fieldName;
-		}
-
-	}
+	private RegisterPage registerPage;
 
 	@Before
 	public void setUpCucumberTests() throws ClassNotFoundException, SQLException {
 		// clean up database
-		cleanUpUsers();
-		// populate page map
-		populatePageMap(pageMap);
+		registerPage = new RegisterPage(driver);
 	}
 
 	@After
 	public void tearDownCucumberTests() {
-		//driver.close();
+		driver.close();
 	}
 
-	private void cleanUpUsers() throws ClassNotFoundException, SQLException {
-		// get database connection
-		Connection conn = getConnection();
-		PreparedStatement statement = conn
-				.prepareStatement("DELETE FROM users;");
-		statement.execute();
+	
+	@Given("^I am on Register Page$")
+	public void i_am_on_Register_Page() throws Throwable {
+	    String pageURL = registerPage.getPageURL("register");
+	    driver.get(pageURL);
 	}
 
-	private Connection getConnection() throws ClassNotFoundException,
-			SQLException {
-		Class.forName(JDBC_DRIVER);
-		return DriverManager.getConnection(DB_URL, USER, PASS);
+	@When("^I enter username as '(.*)'$")
+	public void i_enter_username_as_username(String username) throws Throwable {
+	   registerPage.typeUsername(username);
 	}
 
-	private void populatePageMap(HashMap<String, String> pageMap) {
-		logger.debug("populatePageMap with pages.");
-		pageMap.put("home", "/");
-		pageMap.put("register", "/register");
+	@When("^I enter password as '(.*)' and retypePassword as '(.*)'$")
+	public void i_enter_password_as_and_retypePassword_as(String password, String retypePassword) throws Throwable {
+		registerPage.typePasswordAndRetypePassword(password, retypePassword);
 	}
 
-	@Given("^I can see the \"(.*?)\" page$")
-	public void i_can_see_the_page(String page) throws Throwable {
-		logger.trace("Called i_can_see the_page for " + page);
-		// Look up URL for page from Map
-		String pageURL = getPageURL(page);
-		logger.debug("page url =" + pageURL);
-		driver.get(pageURL);
+	@When("^I select create account$")
+	public void i_select_create_account() throws Throwable {
+	    registerPage.clickOn("create");
 	}
 
-	private String getPageURL(String page) {
-		return PICTURE_URL + pageMap.get(page);
+	@Then("^account '(.*)' should be created successfully$")
+	public void account_should_be_created_successfully(String username) throws Throwable {
+	    assertThat(registerPage.accountCreated(username), is(true));
 	}
 
-	@When("^I type:$")
-	public void i_type(DataTable fieldTable) throws Throwable {
-		// Write code here that turns the phrase above into concrete actions
-		// For automatic transformation, change DataTable to one of
-		// List<YourType>, List<List<E>>, List<Map<K,V>> or Map<K,V>.
-		// E,K,V must be a scalar (String, Integer, Date, enum etc)
-		typeFieldValues(fieldTable);
+	@Then("^I should see menu item '(.*)'$")
+	public void i_should_see_menu_item(String menuItem) throws Throwable {
+	    assertThat(registerPage.menuItemExists(menuItem), is(true));
 	}
 
-	private void typeFieldValues(DataTable fieldTable) {
-		for (FieldValue fieldValue : fieldTable.asList(FieldValue.class)) {
-			String fieldName = fieldValue.getFieldName();
-			String value = fieldValue.getValue();
-			logger.debug("Typing " + value + " in field " + fieldName);
-			WebElement field = driver.findElement(By.id(fieldValue
-					.getFieldName()));
-			field.sendKeys(fieldValue.getValue());
-		}
-
+	@Then("^the '(.*)' page is displayed$")
+	public void the_page_is_displayed(String page) throws Throwable {
+	    assertThat(registerPage.isCurrentPage(page), is(true));
+	}
+	
+	@Then("^account '(.*)' shouldn't be created$")
+	public void account_shouldnt_be_created(String username) throws Throwable {
+	    assertThat(registerPage.accountCreated(username), is(false));
 	}
 
-	@When("^click on \"(.*?)\"$")
-	public void click_on(String id) throws Throwable {
-		clickOn(id);
+	@Then("^I should see error message '(.*)'$")
+	public void i_should_see_message(String message) throws Throwable {
+		assertThat(registerPage.isErrorMessageDisplayed(message), is(true));
 	}
 
-	private void clickOn(String id) {
-		WebElement element = driver.findElement(By.id(id));
-		element.click();
+	@Given("^user exists with username '(.*)'$")
+	public void user_exists_with_username(String username) throws Throwable {
+	    assertThat(registerPage.setUpUser(username), is(true));
 	}
-
-	@Then("^I see the \"(.*?)\" page$")
-	public void i_see_the_page(String pageName) throws Throwable {
-		checkCurrentPageExists(pageName);
-	}
-
-	private void checkCurrentPageExists(String pageName) {
-		String currentURL = driver.getCurrentUrl();
-		String expectedURL = getPageURL(pageName);
-		assertThat(currentURL, equalToIgnoringCase(expectedURL));
-	}
-
-	@Then("^I see the menu item \"(.*?)\"$")
-	public void i_see_the_menu_item(String menuItemText) throws Throwable {
-		checkMenuItemExists(menuItemText);
-	}
-
-	private void checkMenuItemExists(String menuItemText) {
-		logger.debug("Check menu item with text = '" + menuItemText + "' exists");
-		WebElement menuItem = driver.findElement(By.linkText(menuItemText));
-		assertThat(menuItem, notNullValue());
-		assertThat(menuItem.getText(), is(menuItemText));
-	}
+	
+	
 }
